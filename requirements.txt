@@ -1,0 +1,10 @@
+streamlit
+duckdb
+pandas
+numpy
+langchain
+openai
+plotly
+python-dotenv
+sqlparse
+mermaid

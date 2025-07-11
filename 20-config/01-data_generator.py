@@ -625,9 +625,15 @@ def main():
     print("Synthetic dataset generated and saved to synthetic_ecommerce_sales_data.csv")
 
     # 11. Load DataFrame into DuckDB (In-Memory and Persistent File)
-    # Get the directory of the current file to store the database persistently
+    # Get the parent directory and create the database in 30-database/
     current_dir = os.path.dirname(__file__)
-    persistent_db_path = os.path.join(current_dir, "my_ecommerce_db.duckdb")
+    parent_dir = os.path.dirname(current_dir)
+    database_dir = os.path.join(parent_dir, "30-database")
+
+    # Create the database directory if it doesn't exist
+    os.makedirs(database_dir, exist_ok=True)
+
+    persistent_db_path = os.path.join(database_dir, "my_ecommerce_db.duckdb")
     load_data_to_duckdb(df_sales, persistent_db_path)
 
     # 12. (Optional) Run Example DuckDB queries

@@ -11,6 +11,10 @@ Documentation.Rproj
 r.Rproj
 paste.
 
+# Environment files with sensitive data
+.env.local
+.env.production
+
 #https://github.com/github/gitignore
 
 # Logs
