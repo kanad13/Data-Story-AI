@@ -3,6 +3,8 @@ duckdb
 pandas
 numpy
 langchain
+langchain-community
+langchain-openai
 openai
 plotly
 python-dotenv
