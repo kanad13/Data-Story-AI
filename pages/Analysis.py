@@ -113,7 +113,7 @@ def check_database_connection():
     
     return st.session_state.db_connected
 
-def perform_analysis(question: str):
+def perform_analysis(question: str, display_inline: bool = False):
     """Perform comprehensive analysis of a business question."""
     try:
         # Initialize components
@@ -127,7 +127,7 @@ def perform_analysis(question: str):
         
         if not query_result.success:
             st.error(f"Analysis failed: {query_result.error}")
-            return
+            return False
         
         # Get column names from query result or generate them
         if query_result.columns:
@@ -147,7 +147,7 @@ def perform_analysis(question: str):
             )
         
         # Store results in session state
-        st.session_state.analysis_results = {
+        results = {
             'question': question,
             'query': query_result.query,
             'data': query_result.data,
@@ -155,15 +155,24 @@ def perform_analysis(question: str):
             'story': story
         }
         
-        st.success("Analysis completed successfully!")
+        st.session_state.analysis_results = results
+        
+        # Display results inline if requested
+        if display_inline:
+            display_analysis_results(results)
+        else:
+            st.success("Analysis completed successfully!")
+            
+        return True
         
     except Exception as e:
         st.error(f"Analysis failed: {str(e)}")
+        return False
 
-def display_chat_interface():
-    """Display the chat interface."""
-    st.markdown('<div class="main-title">Ask Your Question</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">Type your business question in plain English</div>', unsafe_allow_html=True)
+def display_combined_interface():
+    """Display the combined chat and view interface."""
+    st.markdown('<div class="main-title">E-commerce Data Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">Ask questions and see results immediately</div>', unsafe_allow_html=True)
     
     # Check database connection
     if not check_database_connection():
@@ -187,10 +196,20 @@ def display_chat_interface():
         with col1 if i % 2 == 0 else col2:
             if st.button(question, key=f"example_{i}"):
                 st.session_state.current_question = question
+                # Immediately analyze the question
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": question
+                })
+                if perform_analysis(question, display_inline=True):
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": "Analysis completed successfully!"
+                    })
                 st.rerun()
     
     # Question input
-    st.markdown('<div class="section-title">Your Question</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Ask Your Question</div>', unsafe_allow_html=True)
     
     question = st.text_area(
         "Enter your question:",
@@ -212,14 +231,12 @@ def display_chat_interface():
                     "content": question.strip()
                 })
                 
-                # Perform analysis
-                perform_analysis(question.strip())
-                
-                # Add assistant response
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": "Analysis completed! Check the Results tab for detailed insights."
-                })
+                # Perform analysis and display results inline
+                if perform_analysis(question.strip(), display_inline=True):
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": "Analysis completed successfully!"
+                    })
                 st.rerun()
             else:
                 st.warning("Please enter a question first.")
@@ -229,29 +246,43 @@ def display_chat_interface():
             st.session_state.current_question = ""
             st.rerun()
     
-    # Chat history
+    # Display conversation history with inline results
     if st.session_state.messages:
-        st.markdown('<div class="section-title">Recent Questions</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Analysis History</div>', unsafe_allow_html=True)
         
-        # Show only last 5 messages
-        recent_messages = st.session_state.messages[-5:]
+        # Group messages by pairs (user question + assistant response)
+        conversation_pairs = []
+        for i in range(0, len(st.session_state.messages), 2):
+            if i + 1 < len(st.session_state.messages):
+                user_msg = st.session_state.messages[i]
+                assistant_msg = st.session_state.messages[i + 1]
+                conversation_pairs.append((user_msg, assistant_msg))
         
-        for message in recent_messages:
-            if message["role"] == "user":
-                st.markdown(f"**Q:** {message['content']}")
-            else:
-                st.markdown(f"**A:** {message['content']}")
+        # Display each conversation pair with results
+        for i, (user_msg, assistant_msg) in enumerate(reversed(conversation_pairs[-3:])):
+            st.markdown(f"**Question {len(conversation_pairs) - i}:** {user_msg['content']}")
+            
+            # Try to find matching analysis results
+            if (st.session_state.analysis_results and 
+                st.session_state.analysis_results['question'] == user_msg['content']):
+                
+                with st.expander(f"Results for: {user_msg['content'][:50]}...", expanded=(i == 0)):
+                    display_analysis_results(st.session_state.analysis_results)
+            
+            st.markdown("---")
         
         if st.button("Clear History"):
             st.session_state.messages = []
+            st.session_state.analysis_results = None
             st.rerun()
 
-def display_analysis_results():
+def display_analysis_results(results=None):
     """Display the analysis results."""
-    if not st.session_state.analysis_results:
-        return
+    if results is None:
+        if not st.session_state.analysis_results:
+            return
+        results = st.session_state.analysis_results
     
-    results = st.session_state.analysis_results
     story = results['story']
     data = results['data']
     columns = results['columns']
@@ -337,14 +368,8 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Create tabs
-    tab1, tab2 = st.tabs(["Ask Questions", "View Results"])
-    
-    with tab1:
-        display_chat_interface()
-    
-    with tab2:
-        display_results_interface()
+    # Display combined interface
+    display_combined_interface()
 
 if __name__ == "__main__":
     main()
