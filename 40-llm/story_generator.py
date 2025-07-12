@@ -11,18 +11,18 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
-from dotenv import load_dotenv
 import pandas as pd
 import json
+from dotenv import load_dotenv
 
-# Load environment variables
+# Environment variables hardcoded for Streamlit deployment
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuration
+# Configuration - hardcoded for deployment
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 if not OPENAI_API_KEY:

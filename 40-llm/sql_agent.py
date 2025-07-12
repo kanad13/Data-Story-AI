@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-DB_PATH = os.getenv('DUCKDB_PATH', '30-database/my_ecommerce_db.duckdb')
+DB_PATH = '30-database/my_ecommerce_db.duckdb'
 MAX_QUERY_ROWS = int(os.getenv('MAX_QUERY_ROWS', '10000'))
 QUERY_TIMEOUT = int(os.getenv('QUERY_TIMEOUT', '30'))
 
