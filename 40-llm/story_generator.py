@@ -43,60 +43,100 @@ class StoryGenerator:
     """
     Generates business stories and insights from data analysis results.
     """
-    
+
     def __init__(self):
         """Initialize the story generator."""
         self.llm = self._initialize_llm()
-        
+
+    def _create_safe_dataframe(self, data: List[tuple], columns: List[str]) -> pd.DataFrame:
+        """
+        Create a pandas DataFrame with automatic column mismatch handling.
+
+        Args:
+            data: List of tuples containing query results
+            columns: List of column names
+
+        Returns:
+            pandas DataFrame with properly aligned columns
+        """
+        try:
+            if not data or len(data) == 0:
+                return pd.DataFrame(columns=columns)
+
+            # Fix column count mismatch
+            actual_cols = len(data[0])
+
+            if len(columns) != actual_cols:
+                logger.warning(f"Story generator column mismatch: expected {len(columns)}, got {actual_cols}. Auto-fixing...")
+
+                if len(columns) < actual_cols:
+                    # Add missing column names
+                    columns = columns + [f'col_{i}' for i in range(len(columns), actual_cols)]
+                elif len(columns) > actual_cols:
+                    # Truncate extra column names
+                    columns = columns[:actual_cols]
+
+            return pd.DataFrame(data, columns=columns)
+
+        except Exception as e:
+            logger.error(f"Error creating safe DataFrame in story generator: {e}")
+            # Ultimate fallback: create generic DataFrame
+            if data and len(data) > 0:
+                actual_cols = len(data[0])
+                fallback_columns = [f'column_{i+1}' for i in range(actual_cols)]
+                return pd.DataFrame(data, columns=fallback_columns)
+            else:
+                return pd.DataFrame()
+
     def _initialize_llm(self) -> ChatOpenAI:
         """Initialize the OpenAI LLM."""
         try:
             return ChatOpenAI(
-                model="gpt-3.5-turbo",
-                temperature=0.3,
+                model="gpt-4.1-nano-2025-04-14",
+                temperature=0.8,
                 openai_api_key=OPENAI_API_KEY,
-                max_tokens=3000
+                max_tokens=10000
             )
         except Exception as e:
             logger.error(f"Failed to initialize LLM: {e}")
             raise
-    
+
     def generate_story(self, question: str, query: str, data: List[tuple], columns: List[str]) -> StoryContent:
         """
         Generate a comprehensive business story from query results.
-        
+
         Args:
             question: Original business question
             query: SQL query that was executed
             data: Query results
             columns: Column names
-            
+
         Returns:
             StoryContent with comprehensive analysis
         """
         try:
-            # Convert data to DataFrame for easier processing
-            df = pd.DataFrame(data, columns=columns)
-            
+            # Convert data to DataFrame with safe column handling
+            df = self._create_safe_dataframe(data, columns)
+
             # Create context for the LLM
             context = self._create_analysis_context(question, query, df, columns)
-            
+
             # Generate story using LLM
             story_prompt = self._create_story_prompt(context)
             response = self.llm.invoke([
                 SystemMessage(content=story_prompt["system"]),
                 HumanMessage(content=story_prompt["user"])
             ])
-            
+
             # Parse the response
             story_content = self._parse_story_response(response.content)
-            
+
             return story_content
-            
+
         except Exception as e:
             logger.error(f"Error generating story: {e}")
             return self._create_error_story(str(e))
-    
+
     def _create_analysis_context(self, question: str, query: str, df: pd.DataFrame, columns: List[str]) -> Dict[str, Any]:
         """Create context for story generation."""
         context = {
@@ -109,13 +149,13 @@ class StoryGenerator:
             },
             "data_insights": self._extract_basic_insights(df, columns)
         }
-        
+
         return context
-    
+
     def _extract_basic_insights(self, df: pd.DataFrame, columns: List[str]) -> Dict[str, Any]:
         """Extract basic insights from the data."""
         insights = {}
-        
+
         try:
             if len(df) > 0:
                 for col in columns:
@@ -135,12 +175,12 @@ class StoryGenerator:
                         }
         except Exception as e:
             logger.error(f"Error extracting insights: {e}")
-            
+
         return insights
-    
+
     def _create_story_prompt(self, context: Dict[str, Any]) -> Dict[str, str]:
         """Create prompts for story generation."""
-        
+
         system_prompt = """
 You are a senior business analyst specializing in e-commerce analytics. Your task is to create comprehensive, actionable business stories from data analysis results.
 
@@ -172,7 +212,7 @@ Focus on:
 - Practical recommendations
 - Clear, non-technical language
 """
-        
+
         user_prompt = f"""
 Analyze the following e-commerce data and create a comprehensive business story:
 
@@ -192,12 +232,12 @@ Analyze the following e-commerce data and create a comprehensive business story:
 
 Please provide a comprehensive business analysis in JSON format.
 """
-        
+
         return {
             "system": system_prompt,
             "user": user_prompt
         }
-    
+
     def _parse_story_response(self, response_content: str) -> StoryContent:
         """Parse the LLM response into StoryContent."""
         try:
@@ -208,10 +248,10 @@ Please provide a comprehensive business analysis in JSON format.
             if content.endswith('```'):
                 content = content[:-3]
             content = content.strip()
-            
+
             # Parse JSON
             parsed = json.loads(content)
-            
+
             return StoryContent(
                 executive_summary=parsed.get('executive_summary', ''),
                 key_insights=parsed.get('key_insights', []),
@@ -220,14 +260,14 @@ Please provide a comprehensive business analysis in JSON format.
                 visualization_suggestions=parsed.get('visualization_suggestions', []),
                 follow_up_questions=parsed.get('follow_up_questions', [])
             )
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {e}")
             return self._create_fallback_story(response_content)
         except Exception as e:
             logger.error(f"Error parsing story response: {e}")
             return self._create_error_story(str(e))
-    
+
     def _create_fallback_story(self, raw_content: str) -> StoryContent:
         """Create a fallback story when JSON parsing fails."""
         return StoryContent(
@@ -253,7 +293,7 @@ Please provide a comprehensive business analysis in JSON format.
                 "What time period should we focus on?"
             ]
         )
-    
+
     def _create_error_story(self, error_message: str) -> StoryContent:
         """Create an error story when generation fails."""
         return StoryContent(
@@ -278,41 +318,41 @@ Please provide a comprehensive business analysis in JSON format.
                 "Should we simplify the analysis?"
             ]
         )
-    
+
     def generate_quick_summary(self, data: List[tuple], columns: List[str]) -> str:
         """
         Generate a quick summary of query results.
-        
+
         Args:
             data: Query results
             columns: Column names
-            
+
         Returns:
             Quick summary string
         """
         try:
             if not data:
                 return "No data found for the given query."
-            
+
             df = pd.DataFrame(data, columns=columns)
-            
+
             summary = f"Query returned {len(df)} rows with {len(columns)} columns. "
-            
+
             # Add insights about numeric columns
             numeric_cols = df.select_dtypes(include=['number']).columns
             if len(numeric_cols) > 0:
                 col = numeric_cols[0]
                 summary += f"The {col} ranges from {df[col].min():.2f} to {df[col].max():.2f}. "
-            
+
             # Add insights about categorical columns
             categorical_cols = df.select_dtypes(include=['object']).columns
             if len(categorical_cols) > 0:
                 col = categorical_cols[0]
                 unique_count = df[col].nunique()
                 summary += f"There are {unique_count} unique {col} values. "
-            
+
             return summary
-            
+
         except Exception as e:
             logger.error(f"Error generating quick summary: {e}")
             return f"Summary generation failed: {str(e)}"
@@ -324,7 +364,7 @@ story_generator = None
 def get_story_generator() -> StoryGenerator:
     """
     Get the global story generator instance.
-    
+
     Returns:
         StoryGenerator: The global story generator instance
     """
@@ -338,7 +378,7 @@ def test_story_generator():
     """Test the story generator functionality."""
     try:
         generator = get_story_generator()
-        
+
         # Sample data
         sample_data = [
             ('Electronics', 1500, 45),
@@ -346,22 +386,22 @@ def test_story_generator():
             ('Books', 800, 25),
             ('Home', 600, 18)
         ]
-        
+
         columns = ['category', 'revenue', 'orders']
         question = "What are the top product categories by revenue?"
         query = "SELECT category, SUM(revenue) as revenue, COUNT(*) as orders FROM sales GROUP BY category ORDER BY revenue DESC"
-        
+
         print("🔍 Testing story generation...")
         story = generator.generate_story(question, query, sample_data, columns)
-        
+
         print(f"✅ Executive Summary: {story.executive_summary}")
         print(f"✅ Key Insights: {len(story.key_insights)} insights")
         print(f"✅ Recommendations: {len(story.recommendations)} recommendations")
-        
+
         # Test quick summary
         quick_summary = generator.generate_quick_summary(sample_data, columns)
         print(f"✅ Quick Summary: {quick_summary}")
-        
+
         return True
     except Exception as e:
         print(f"❌ Story generator test failed: {e}")

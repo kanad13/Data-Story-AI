@@ -134,6 +134,43 @@ def test_visualization_components():
             print("  ❌ Chart generation failed")
             return False
         
+        # Test advanced chart types
+        statistical_data = [
+            ('Electronics', 150.5, 45.2, 125.0),
+            ('Clothing', 120.3, 38.1, 98.5),
+            ('Books', 80.7, 25.4, 72.3),
+            ('Home', 60.2, 18.9, 55.1)
+        ]
+        stat_columns = ['category', 'mean_value', 'std_deviation', 'median_value']
+        
+        # Test statistical chart
+        stat_fig = chart_generator.create_statistical_summary_chart(
+            statistical_data, stat_columns, "Statistical Analysis Test"
+        )
+        if stat_fig:
+            print("  ✓ Statistical summary chart generated successfully")
+        else:
+            print("  ❌ Statistical summary chart failed")
+            return False
+        
+        # Test violin plot
+        violin_fig = chart_generator.create_violin_plot(sample_data, columns, "Violin Plot Test")
+        if violin_fig:
+            print("  ✓ Violin plot generated successfully")
+        else:
+            print("  ❌ Violin plot failed")
+            return False
+        
+        # Test funnel chart
+        funnel_data = [('Visited', 1000), ('Added to Cart', 300), ('Checkout', 150), ('Purchased', 100)]
+        funnel_columns = ['stage', 'count']
+        funnel_fig = chart_generator.create_funnel_chart(funnel_data, funnel_columns, "Conversion Funnel")
+        if funnel_fig:
+            print("  ✓ Funnel chart generated successfully")
+        else:
+            print("  ❌ Funnel chart failed")
+            return False
+        
         # Test chart type suggestion
         suggested_type = suggest_chart_type(sample_data, columns)
         print(f"  ✓ Chart type suggestion: {suggested_type}")
@@ -159,11 +196,23 @@ def test_end_to_end_workflow():
         story_generator = get_story_generator()
         chart_generator = get_chart_generator()
         
-        # Test questions
+        # Test questions - including basic and advanced analytics
         test_questions = [
+            # Basic Analytics
             "What are the top 5 product categories by revenue?",
             "Show me the average order value by shipping state",
-            "Which payment methods are most popular?"
+            "Which payment methods are most popular?",
+            # Advanced Statistical Analytics
+            "Calculate the standard deviation of order values by product category",
+            "Show me the coefficient of variation for sales across different states",
+            "What's the sales distribution percentile analysis (25th, 50th, 75th, 95th)?",
+            # Business Intelligence
+            "Identify high-value customer segments (customers with orders > 95th percentile)",
+            "Show purchase frequency analysis: customers by number of orders placed",
+            "Calculate conversion metrics: orders vs cancelled/returned orders by category",
+            # Advanced Business Analytics  
+            "Show Pareto analysis: which 20% of products generate 80% of revenue?",
+            "Calculate market share by state and identify growth opportunities"
         ]
         
         for i, question in enumerate(test_questions, 1):

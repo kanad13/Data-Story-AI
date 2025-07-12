@@ -80,9 +80,11 @@ graph TD
 
 **Sample questions to try:**
 
-- "What are our top revenue-generating product categories?"
-- "Show me seasonal trends in customer purchasing behavior"
-- "Which payment methods have the highest average order values?"
+- "What are our top-selling product categories?"
+- "Calculate the standard deviation of order values by product category"  
+- "Show me monthly sales trends for 2023"
+- "Which states generate the most revenue?"
+- "Analyze payment method adoption trends over time"
 
 ---
 
@@ -160,7 +162,7 @@ graph TB
 
 **🎨 Visualization & Storytelling**
 
-- **Plotly Interactive Charts**: Auto-generates appropriate chart types (bar, line, pie, scatter, histogram) based on data characteristics. Users can interact with charts for deeper exploration.
+- **Plotly Interactive Charts**: Auto-generates appropriate chart types (bar, line, pie, scatter, histogram, violin plots, funnel charts, waterfall charts, statistical summaries) based on data characteristics and query context. Users can interact with charts for deeper exploration.
 - **Automated Chart Selection**: Intelligent algorithm that analyzes data types and patterns to select the most effective visualization automatically.
 - **Executive Summary Generator**: Synthesizes complex analytical results into clear, actionable business recommendations with priority rankings and next steps.
 
@@ -213,7 +215,15 @@ Data-Story-AI/
 │   ├── 01_Demo_Dataset.py       # Dataset overview page
 │   ├── 02_AI_Chatbot.py         # Interactive AI chat interface
 │   └── 03_About_Me.py           # About the creator and acknowledgments
+├── 10-agent/                    # AI agent workflow and task management
+│   ├── 01-task-for-agent.md     # Initial task specifications
+│   ├── 02-instructions-for-agent.md  # Agent operational guidelines
+│   ├── 03-task-state-tracker.md # Progress tracking and session state
+│   └── 04-response_guidelines.md    # Output formatting guidelines
+├── 20-config/
+│   └── 01-data_generator.py     # Synthetic data generation utilities
 ├── 30-database/
+│   ├── __init__.py              # Database module initialization
 │   ├── connection.py            # DuckDB connection management
 │   ├── schema.py                # Database schema and business context
 │   └── my_ecommerce_db.duckdb   # Sample e-commerce database
@@ -221,8 +231,12 @@ Data-Story-AI/
 │   ├── sql_agent.py             # SQL query generation from natural language
 │   └── story_generator.py       # Business narrative and insight generation
 ├── 50-visualization/
-│   └── plotly_charts.py         # Interactive chart generation
+│   └── plotly_charts.py         # Interactive chart generation and advanced visualizations
+├── 60-tests/
+│   ├── __init__.py              # Test module initialization
+│   └── test_application.py      # Comprehensive test suite for all components
 ├── 70-data/
+│   ├── __init__.py              # Data module initialization
 │   └── synthetic_ecommerce_sales_data.csv  # Source data file
 ├── requirements.txt             # Python dependencies
 └── README.md                    # This file

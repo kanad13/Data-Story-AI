@@ -43,16 +43,16 @@ def perform_analysis(question: str):
 
         with st.spinner("🔍 Analyzing your question..."):
             query_result = sql_agent.generate_sql(question)
-        
+
         if not query_result.success:
             st.error(f"Analysis failed: {query_result.error}")
             return False
 
         with st.spinner("📖 Generating your data story..."):
             story = story_generator.generate_story(
-                question, 
-                query_result.query, 
-                query_result.data, 
+                question,
+                query_result.query,
+                query_result.data,
                 query_result.columns
             )
 
@@ -107,13 +107,28 @@ def display_analysis_results():
 
         st.subheader("Raw Data Table")
         if data:
-            df = pd.DataFrame(data, columns=columns)
-            st.dataframe(df, use_container_width=True)
-        
+            # Handle column mismatch gracefully
+            try:
+                if len(data) > 0:
+                    actual_cols = len(data[0])
+                    if len(columns) != actual_cols:
+                        if len(columns) < actual_cols:
+                            columns = columns + [f'col_{i}' for i in range(len(columns), actual_cols)]
+                        elif len(columns) > actual_cols:
+                            columns = columns[:actual_cols]
+
+                df = pd.DataFrame(data, columns=columns)
+                st.dataframe(df, use_container_width=True)
+            except Exception as e:
+                st.warning(f"Could not display raw data table: {e}")
+                st.text("Raw data:")
+                for i, row in enumerate(data[:10]):  # Show first 10 rows as text
+                    st.text(f"Row {i+1}: {row}")
+
         st.subheader("Generated SQL Query")
         st.code(results['query'], language='sql')
 
-    
+
 
 def main():
     """Main function for the AI Chatbot page."""
@@ -128,13 +143,14 @@ def main():
 
     predefined_questions = [
         "Select a sample question",
-        "What are our top-selling product categories?",
-        "Show me monthly sales trends for 2023",
         "Which states generate the most revenue?",
-        "What's the average order value by payment method?",
+        "Calculate the standard deviation of order values by product category",
+        "Show purchase frequency analysis: customers by number of orders placed",
+        "Calculate conversion metrics: orders vs cancelled/returned orders by category",
+        "Analyze payment method adoption trends over time",
         "Other (type your own question below)"
     ]
-    
+
     selected_question = st.selectbox(
         "Start with a sample question or select 'Other' to ask your own:",
         predefined_questions,
@@ -159,7 +175,7 @@ def main():
             if perform_analysis(current_question):
                 st.success("Your data story is ready!")
                 # This rerun is to ensure the display function is called immediately after analysis
-                st.rerun() 
+                st.rerun()
         else:
             st.warning("Please select or enter a question first.")
 

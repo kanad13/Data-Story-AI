@@ -35,6 +35,46 @@ class PlotlyChartGenerator:
             'modeBarButtonsToRemove': ['lasso2d', 'select2d']
         }
     
+    def _create_safe_dataframe(self, data: List[tuple], columns: List[str]) -> pd.DataFrame:
+        """
+        Create a pandas DataFrame with automatic column mismatch handling.
+        
+        Args:
+            data: List of tuples containing query results
+            columns: List of column names
+            
+        Returns:
+            pandas DataFrame with properly aligned columns
+        """
+        try:
+            if not data or len(data) == 0:
+                return pd.DataFrame(columns=columns)
+            
+            # Fix column count mismatch
+            actual_cols = len(data[0])
+            
+            if len(columns) != actual_cols:
+                logger.warning(f"Column mismatch: expected {len(columns)}, got {actual_cols}. Auto-fixing...")
+                
+                if len(columns) < actual_cols:
+                    # Add missing column names
+                    columns = columns + [f'col_{i}' for i in range(len(columns), actual_cols)]
+                elif len(columns) > actual_cols:
+                    # Truncate extra column names  
+                    columns = columns[:actual_cols]
+            
+            return pd.DataFrame(data, columns=columns)
+            
+        except Exception as e:
+            logger.error(f"Error creating safe DataFrame: {e}")
+            # Ultimate fallback: create generic DataFrame
+            if data and len(data) > 0:
+                actual_cols = len(data[0])
+                fallback_columns = [f'column_{i+1}' for i in range(actual_cols)]
+                return pd.DataFrame(data, columns=fallback_columns)
+            else:
+                return pd.DataFrame()
+    
     def create_bar_chart(self, data: List[tuple], columns: List[str], title: str = "Bar Chart") -> go.Figure:
         """
         Create a bar chart from query results.
@@ -48,13 +88,13 @@ class PlotlyChartGenerator:
             Plotly Figure object
         """
         try:
-            df = pd.DataFrame(data, columns=columns)
+            df = self._create_safe_dataframe(data, columns)
             
-            if len(columns) < 2:
+            if len(df.columns) < 2:
                 raise ValueError("Bar chart requires at least 2 columns")
             
-            x_col = columns[0]
-            y_col = columns[1]
+            x_col = df.columns[0]
+            y_col = df.columns[1]
             
             fig = px.bar(
                 df, 
@@ -88,13 +128,13 @@ class PlotlyChartGenerator:
             Plotly Figure object
         """
         try:
-            df = pd.DataFrame(data, columns=columns)
+            df = self._create_safe_dataframe(data, columns)
             
-            if len(columns) < 2:
+            if len(df.columns) < 2:
                 raise ValueError("Line chart requires at least 2 columns")
             
-            x_col = columns[0]
-            y_col = columns[1]
+            x_col = df.columns[0]
+            y_col = df.columns[1]
             
             fig = px.line(
                 df, 
@@ -127,13 +167,13 @@ class PlotlyChartGenerator:
             Plotly Figure object
         """
         try:
-            df = pd.DataFrame(data, columns=columns)
+            df = self._create_safe_dataframe(data, columns)
             
-            if len(columns) < 2:
+            if len(df.columns) < 2:
                 raise ValueError("Pie chart requires at least 2 columns")
             
-            names_col = columns[0]
-            values_col = columns[1]
+            names_col = df.columns[0]
+            values_col = df.columns[1]
             
             fig = px.pie(
                 df, 
@@ -163,16 +203,16 @@ class PlotlyChartGenerator:
             Plotly Figure object
         """
         try:
-            df = pd.DataFrame(data, columns=columns)
+            df = self._create_safe_dataframe(data, columns)
             
-            if len(columns) < 2:
+            if len(df.columns) < 2:
                 raise ValueError("Scatter plot requires at least 2 columns")
             
-            x_col = columns[0]
-            y_col = columns[1]
+            x_col = df.columns[0]
+            y_col = df.columns[1]
             
             # Use third column for color if available
-            color_col = columns[2] if len(columns) > 2 else None
+            color_col = df.columns[2] if len(df.columns) > 2 else None
             
             fig = px.scatter(
                 df, 
@@ -268,6 +308,216 @@ class PlotlyChartGenerator:
             logger.error(f"Error creating heatmap: {e}")
             return self._create_error_chart(f"Error creating heatmap: {e}")
     
+    def create_violin_plot(self, data: List[tuple], columns: List[str], title: str = "Violin Plot") -> go.Figure:
+        """
+        Create a violin plot from query results for distribution analysis.
+        
+        Args:
+            data: List of tuples containing query results
+            columns: List of column names
+            title: Chart title
+            
+        Returns:
+            Plotly Figure object
+        """
+        try:
+            df = self._create_safe_dataframe(data, columns)
+            
+            if len(df.columns) < 2:
+                raise ValueError("Violin plot requires at least 2 columns")
+            
+            x_col = df.columns[0]
+            y_col = df.columns[1]
+            
+            fig = px.violin(
+                df, 
+                x=x_col, 
+                y=y_col,
+                title=title,
+                box=True,
+                color_discrete_sequence=self.default_colors
+            )
+            
+            fig.update_layout(
+                xaxis_title=x_col.replace('_', ' ').title(),
+                yaxis_title=y_col.replace('_', ' ').title()
+            )
+            
+            return fig
+        except Exception as e:
+            logger.error(f"Error creating violin plot: {e}")
+            return self._create_error_chart(f"Error creating violin plot: {e}")
+    
+    def create_funnel_chart(self, data: List[tuple], columns: List[str], title: str = "Funnel Chart") -> go.Figure:
+        """
+        Create a funnel chart for conversion analysis.
+        
+        Args:
+            data: List of tuples containing query results
+            columns: List of column names
+            title: Chart title
+            
+        Returns:
+            Plotly Figure object
+        """
+        try:
+            df = self._create_safe_dataframe(data, columns)
+            
+            if len(df.columns) < 2:
+                raise ValueError("Funnel chart requires at least 2 columns")
+            
+            names_col = df.columns[0]
+            values_col = df.columns[1]
+            
+            fig = go.Figure(go.Funnel(
+                y=df[names_col],
+                x=df[values_col],
+                textinfo="value+percent initial"
+            ))
+            
+            fig.update_layout(
+                title=title,
+                font_size=12
+            )
+            
+            return fig
+        except Exception as e:
+            logger.error(f"Error creating funnel chart: {e}")
+            return self._create_error_chart(f"Error creating funnel chart: {e}")
+    
+    def create_waterfall_chart(self, data: List[tuple], columns: List[str], title: str = "Waterfall Chart") -> go.Figure:
+        """
+        Create a waterfall chart for breakdown analysis.
+        
+        Args:
+            data: List of tuples containing query results
+            columns: List of column names
+            title: Chart title
+            
+        Returns:
+            Plotly Figure object
+        """
+        try:
+            df = self._create_safe_dataframe(data, columns)
+            
+            if len(df.columns) < 2:
+                raise ValueError("Waterfall chart requires at least 2 columns")
+            
+            x_col = df.columns[0]
+            y_col = df.columns[1]
+            
+            fig = go.Figure(go.Waterfall(
+                name="",
+                orientation="v",
+                measure=["relative"] * (len(df) - 1) + ["total"],
+                x=df[x_col],
+                y=df[y_col],
+                connector={"line": {"color": "rgb(63, 63, 63)"}},
+            ))
+            
+            fig.update_layout(
+                title=title,
+                showlegend=False
+            )
+            
+            return fig
+        except Exception as e:
+            logger.error(f"Error creating waterfall chart: {e}")
+            return self._create_error_chart(f"Error creating waterfall chart: {e}")
+    
+    def create_statistical_summary_chart(self, data: List[tuple], columns: List[str], title: str = "Statistical Summary") -> go.Figure:
+        """
+        Create a statistical summary visualization with multiple metrics.
+        
+        Args:
+            data: List of tuples containing query results
+            columns: List of column names
+            title: Chart title
+            
+        Returns:
+            Plotly Figure object
+        """
+        try:
+            df = pd.DataFrame(data, columns=columns)
+            
+            # Create subplots for multiple statistical views
+            from plotly.subplots import make_subplots
+            
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=("Distribution", "Box Plot", "Summary Stats", "Outliers"),
+                specs=[[{"type": "scatter"}, {"type": "scatter"}],
+                       [{"type": "table"}, {"type": "scatter"}]]
+            )
+            
+            # Assume first numeric column for analysis
+            numeric_col = None
+            for col in columns:
+                if df[col].dtype in ['int64', 'float64']:
+                    numeric_col = col
+                    break
+            
+            if numeric_col:
+                values = df[numeric_col]
+                
+                # Distribution histogram
+                fig.add_trace(
+                    go.Histogram(x=values, name="Distribution"),
+                    row=1, col=1
+                )
+                
+                # Box plot
+                fig.add_trace(
+                    go.Box(y=values, name="Box Plot"),
+                    row=1, col=2
+                )
+                
+                # Summary statistics table
+                stats = {
+                    'Statistic': ['Mean', 'Median', 'Std Dev', 'Min', 'Max', 'Q1', 'Q3'],
+                    'Value': [
+                        f"{values.mean():.2f}",
+                        f"{values.median():.2f}",
+                        f"{values.std():.2f}",
+                        f"{values.min():.2f}",
+                        f"{values.max():.2f}",
+                        f"{values.quantile(0.25):.2f}",
+                        f"{values.quantile(0.75):.2f}"
+                    ]
+                }
+                
+                fig.add_trace(
+                    go.Table(
+                        header=dict(values=list(stats.keys())),
+                        cells=dict(values=list(stats.values()))
+                    ),
+                    row=2, col=1
+                )
+                
+                # Outliers scatter plot
+                Q1 = values.quantile(0.25)
+                Q3 = values.quantile(0.75)
+                IQR = Q3 - Q1
+                outliers = values[(values < Q1 - 1.5*IQR) | (values > Q3 + 1.5*IQR)]
+                
+                fig.add_trace(
+                    go.Scatter(
+                        x=list(range(len(outliers))),
+                        y=outliers,
+                        mode='markers',
+                        name="Outliers",
+                        marker=dict(color='red', size=8)
+                    ),
+                    row=2, col=2
+                )
+            
+            fig.update_layout(title=title, height=600)
+            return fig
+            
+        except Exception as e:
+            logger.error(f"Error creating statistical summary: {e}")
+            return self._create_error_chart(f"Error creating statistical summary: {e}")
+
     def create_box_plot(self, data: List[tuple], columns: List[str], title: str = "Box Plot") -> go.Figure:
         """
         Create a box plot from query results.
@@ -281,13 +531,13 @@ class PlotlyChartGenerator:
             Plotly Figure object
         """
         try:
-            df = pd.DataFrame(data, columns=columns)
+            df = self._create_safe_dataframe(data, columns)
             
-            if len(columns) < 2:
+            if len(df.columns) < 2:
                 raise ValueError("Box plot requires at least 2 columns")
             
-            x_col = columns[0]
-            y_col = columns[1]
+            x_col = df.columns[0]
+            y_col = df.columns[1]
             
             fig = px.box(
                 df, 
@@ -309,7 +559,7 @@ class PlotlyChartGenerator:
     
     def auto_generate_chart(self, data: List[tuple], columns: List[str], title: str = "Auto Chart") -> go.Figure:
         """
-        Automatically generate the most appropriate chart based on data characteristics.
+        Automatically generate the most appropriate chart based on data characteristics and query context.
         
         Args:
             data: List of tuples containing query results
@@ -322,7 +572,41 @@ class PlotlyChartGenerator:
         try:
             df = pd.DataFrame(data, columns=columns)
             
-            if len(columns) == 1:
+            # Analyze title and column names for statistical indicators
+            title_lower = title.lower()
+            columns_lower = [col.lower() for col in columns]
+            
+            # Check for statistical analysis keywords
+            statistical_keywords = ['standard deviation', 'std dev', 'variance', 'coefficient', 'percentile', 
+                                 'quartile', 'distribution', 'outlier', 'correlation', 'volatility']
+            conversion_keywords = ['conversion', 'funnel', 'pipeline', 'flow']
+            breakdown_keywords = ['breakdown', 'waterfall', 'contribution', 'decomposition']
+            
+            is_statistical = any(keyword in title_lower for keyword in statistical_keywords)
+            is_conversion = any(keyword in title_lower for keyword in conversion_keywords)
+            is_breakdown = any(keyword in title_lower for keyword in breakdown_keywords)
+            
+            # Statistical analysis - use advanced visualizations
+            if is_statistical and len(columns) >= 2:
+                # Check if we have statistical measures in column names
+                stat_cols = [col for col in columns_lower if any(stat in col for stat in ['std', 'deviation', 'variance', 'coefficient'])]
+                if stat_cols or 'distribution' in title_lower:
+                    return self.create_statistical_summary_chart(data, columns, title)
+                elif 'percentile' in title_lower or 'quartile' in title_lower:
+                    return self.create_box_plot(data, columns, title)
+                else:
+                    return self.create_violin_plot(data, columns, title)
+            
+            # Conversion analysis
+            elif is_conversion and len(columns) >= 2:
+                return self.create_funnel_chart(data, columns, title)
+            
+            # Breakdown analysis
+            elif is_breakdown and len(columns) >= 2:
+                return self.create_waterfall_chart(data, columns, title)
+            
+            # Standard logic for non-statistical queries
+            elif len(columns) == 1:
                 # Single column - histogram
                 return self.create_histogram(data, columns, title)
             elif len(columns) == 2:
@@ -350,8 +634,19 @@ class PlotlyChartGenerator:
                 else:
                     return self.create_bar_chart(data, columns, title)
             
+            # Multiple columns with specific patterns
+            elif len(columns) >= 3:
+                # Check for heatmap patterns (3+ columns with categorical x numeric)
+                if (df[columns[0]].dtype == 'object' and 
+                    df[columns[1]].dtype == 'object' and 
+                    pd.api.types.is_numeric_dtype(df[columns[2]].dtype)):
+                    return self.create_heatmap(data, columns, title)
+                else:
+                    # Default to bar chart with first two columns
+                    return self.create_bar_chart(data, columns[:2], title)
+            
             else:
-                # Multiple columns - create bar chart with first two
+                # Fallback to bar chart
                 return self.create_bar_chart(data, columns[:2], title)
                 
         except Exception as e:
