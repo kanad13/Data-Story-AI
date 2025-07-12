@@ -136,23 +136,21 @@ graph TB
     G --> H[Story Generator]
     H --> I[LLM Analysis]
     I --> J[Executive Summary]
-    G --> K[Plotly Visualizer]
+    G --> K[Plotly Auto-Chart Generator]
     K --> L[Interactive Charts]
-    G --> M[Mermaid Generator]
-    M --> N[Process Diagrams]
-    J --> O[Multi-modal Response]
-    L --> O
-    N --> O
-    O --> P[Streamlit Display]
+    J --> M[Complete Data Story]
+    L --> M
+    M --> N[Streamlit Display]
 ```
 
 ### Core Technology Stack
 
 **🧠 AI & Language Processing**
 
-- **Large Language Models**: Transform natural language questions into SQL queries and generate business narratives. Handles context understanding, query optimization, and insight synthesis.
-- **LangChain Framework**: Orchestrates complex AI workflows, manages conversation memory, and ensures reliable SQL generation with error handling and validation.
-- **Custom Prompt Engineering**: Domain-specific prompts optimized for business analytics, ensuring consistent query quality and relevant insights.
+- **Large Language Models**: Transforms natural language questions into SQL queries and generates comprehensive business narratives with actionable insights.
+- **LangChain Integration**: Uses LangChain framework for structured LLM interactions, prompt management, and SQL database toolkit for reliable query generation and execution.
+- **SQL Query Generator**: Custom module that leverages LLM capabilities to generate accurate DuckDB-compatible SQL queries from business questions.
+- **Story Generator**: AI-powered component that creates executive summaries, key insights, detailed analysis, and strategic recommendations from query results.
 
 **📊 Data Processing Engine**
 
@@ -162,8 +160,8 @@ graph TB
 
 **🎨 Visualization & Storytelling**
 
-- **Plotly Interactive Charts**: Creates dynamic visualizations that users can explore - drilling down into data points, filtering by dimensions, and discovering patterns through interaction.
-- **Mermaid Process Diagrams**: Generates conceptual flowcharts that explain business processes, decision trees, and workflow patterns discovered in the data.
+- **Plotly Interactive Charts**: Auto-generates appropriate chart types (bar, line, pie, scatter, histogram) based on data characteristics. Users can interact with charts for deeper exploration.
+- **Automated Chart Selection**: Intelligent algorithm that analyzes data types and patterns to select the most effective visualization automatically.
 - **Executive Summary Generator**: Synthesizes complex analytical results into clear, actionable business recommendations with priority rankings and next steps.
 
 **🔧 Application Infrastructure**
@@ -177,23 +175,26 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant S as Streamlit
-    participant L as LangChain
-    participant LLM as Language Model
+    participant S as Streamlit Frontend
+    participant L as LangChain Agent
+    participant M as LLM Provider
     participant D as DuckDB
-    participant V as Visualizer
+    participant G as Story Generator
+    participant V as Chart Generator
 
     U->>S: Ask business question
     S->>L: Process natural language
-    L->>LLM: Generate SQL query
-    LLM-->>L: Return SQL + reasoning
+    L->>M: Generate SQL query
+    M-->>L: Return optimized SQL
     L->>D: Execute query
     D-->>L: Return data results
-    L->>LLM: Generate business story
-    LLM-->>L: Return insights + narrative
+    L->>G: Send results for analysis
+    G->>M: Generate business story
+    M-->>G: Return insights + narrative
     L->>V: Create visualizations
-    V-->>S: Charts + diagrams
-    S-->>U: Complete data story
+    V-->>S: Interactive charts
+    G-->>S: Complete data story
+    S-->>U: Multi-modal response
 ```
 
 ### Performance Characteristics
@@ -203,11 +204,117 @@ sequenceDiagram
 - **Concurrent Users**: Supports multiple simultaneous sessions
 - **Memory Usage**: ~200MB for typical workloads
 
+## Project Structure
+
+```
+Data-Story-AI/
+├── Welcome.py                    # Main Streamlit homepage
+├── pages/
+│   ├── 01_Demo_Dataset.py       # Dataset overview page
+│   ├── 02_AI_Chatbot.py         # Interactive AI chat interface
+│   └── 03_About_Me.py           # About the creator and acknowledgments
+├── 30-database/
+│   ├── connection.py            # DuckDB connection management
+│   ├── schema.py                # Database schema and business context
+│   └── my_ecommerce_db.duckdb   # Sample e-commerce database
+├── 40-llm/
+│   ├── sql_agent.py             # SQL query generation from natural language
+│   └── story_generator.py       # Business narrative and insight generation
+├── 50-visualization/
+│   └── plotly_charts.py         # Interactive chart generation
+├── 70-data/
+│   └── synthetic_ecommerce_sales_data.csv  # Source data file
+├── requirements.txt             # Python dependencies
+└── README.md                    # This file
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.9+
+- LLM API key (OpenAI, Anthropic, or compatible provider)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/Data-Story-AI.git
+   cd Data-Story-AI
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   Create a `.env` file in the project root:
+   ```env
+   OPENAI_API_KEY=your_llm_api_key_here
+   DUCKDB_PATH=30-database/my_ecommerce_db.duckdb
+   MAX_QUERY_ROWS=10000
+   QUERY_TIMEOUT=30
+   ```
+
+5. **Run the application**
+   ```bash
+   streamlit run Welcome.py
+   ```
+
+6. **Open in browser**
+   Navigate to `http://localhost:8501`
+
+### Sample Database Schema
+
+The demo includes a synthetic e-commerce dataset with the following structure:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `order_id` | BIGINT | Unique order identifier |
+| `customer_id` | BIGINT | Unique customer identifier |
+| `order_date` | TIMESTAMP | Order placement date |
+| `product_name` | VARCHAR | Product name |
+| `product_category` | VARCHAR | Main product category |
+| `product_subcategory` | VARCHAR | Product subcategory |
+| `quantity_ordered` | BIGINT | Number of units ordered |
+| `product_price` | DOUBLE | Price per unit (USD) |
+| `payment_method` | VARCHAR | Payment method used |
+| `shipping_state` | VARCHAR | Destination state |
+| `order_status` | VARCHAR | Current order status |
+
+**Data Overview:**
+- 10,000 orders from 500 unique customers
+- 8 main product categories with 4 subcategories each
+- Full year 2023 data (seasonal patterns)
+- 6 major US states coverage
+- 4 payment methods and 6 order statuses
+
+## Technical Implementation Notes
+
+### LangChain SQL Integration
+
+This project uses LangChain's SQL capabilities for natural language to database queries. The implementation follows the [LangChain SQL QA tutorial](https://python.langchain.com/docs/tutorials/sql_qa/) approach with:
+
+- **Structured Prompts**: Domain-specific prompts optimized for e-commerce analytics
+- **Schema Context**: Rich business context provided to the LLM for accurate query generation  
+- **Error Handling**: Robust validation and error recovery for SQL queries
+- **Query Safety**: Built-in protections against dangerous SQL operations
+
+The current implementation uses a simplified approach compared to the full LangChain agent toolkit, focusing on reliable query generation and execution for analytical use cases.
+
 ### Extensibility
 
 The modular architecture allows easy extension:
 
 - **New Data Sources**: Add connectors for PostgreSQL, MySQL, APIs
-- **Custom Visualizations**: Extend Plotly components
-- **Additional AI Models**: Swap in Claude, Gemini, or local models
+- **Custom Visualizations**: Extend Plotly components  
+- **Additional AI Models**: Swap in Claude, Gemini, or local models via LangChain
 - **Business Domains**: Customize prompts for finance, marketing, operations
+- **Advanced Agents**: Upgrade to full LangChain SQL agent with multi-step reasoning
