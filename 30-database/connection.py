@@ -21,8 +21,15 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Database configuration
-DB_PATH = os.getenv('DUCKDB_PATH', '30-database/my_ecommerce_db.duckdb')
+# Database configuration - Use absolute path to avoid directory issues
+def get_default_db_path():
+    """Get the default database path relative to the project root."""
+    # Get the project root directory (parent of 30-database)
+    current_dir = Path(__file__).parent  # 30-database directory
+    project_root = current_dir.parent    # project root directory
+    return str(project_root / "30-database" / "my_ecommerce_db.duckdb")
+
+DB_PATH = os.getenv('DUCKDB_PATH', get_default_db_path())
 MAX_QUERY_ROWS = int(os.getenv('MAX_QUERY_ROWS', '10000'))
 QUERY_TIMEOUT = int(os.getenv('QUERY_TIMEOUT', '30'))
 

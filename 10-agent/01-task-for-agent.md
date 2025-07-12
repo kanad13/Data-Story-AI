@@ -2,7 +2,7 @@
 
 ## **Project Overview**
 
-Build a conversational data analytics tool using Streamlit that allows users to ask business questions about e-commerce data and receive rich, multi-modal insights combining text explanations, process diagrams, and interactive visualizations.
+A single-page data analytics tool using Streamlit that allows users to ask business questions about e-commerce data through a clean dropdown interface and receive rich, multi-modal insights combining text explanations and interactive visualizations. The application features a clean sidebar navigation and immediate inline results display.
 
 ## **Pre-Development Setup**
 
@@ -69,43 +69,63 @@ Create comprehensive schema documentation including:
 
 ---
 
-## **Phase 1: Core Foundation (MVP)**
+## **Current Phase: Enhanced UI & Experience (Phase 1.5)**
 
-### **1.1 Project Structure Setup**
+The core MVP functionality is largely complete. Focus is now on UI refinements and user experience improvements.
 
-Create the following directory structure:
+### **1.1 Current Project Structure**
+
+The project currently has this structure:
 
 ```
-poly-base/
-├── main.py                    # Main Streamlit application
-├── 10-agent/                  # Agent instruction and workflow files
+Data-Story-AI/
+├── Welcome.py                 # Main Streamlit entry point
+├── pages/                     # Streamlit multi-page app structure
+│   ├── Analysis.py           # Main analysis interface (single-page)
+│   └── Data.py               # Data overview and schema information
+├── 10-agent/                  # Agent instructions and workflows
 │   ├── 01-task-for-agent.md
 │   ├── 02-instructions-for-agent.md
 │   ├── 03-task-state-tracker.md
 │   └── 04-response_guidelines.md
-├── 20-config/                 # Configuration and data generation
-│   └── 01-data_generator.py
-├── 30-database/
+├── 20-config/                 # Data generation and configuration
+│   └── 01-data_generator.py  # Generates synthetic e-commerce data
+├── 30-database/               # Database utilities and schema
+│   ├── __init__.py
 │   ├── connection.py          # DuckDB connection utilities
 │   ├── schema.py             # Schema definitions for LLM context
-│   └── my_ecommerce_db.duckdb # Pre-generated database
-├── 40-llm/
-│   ├── sql_agent.py          # LangChain SQL agent configuration
-│   └── story_generator.py    # OpenAI story generation logic
-├── 50-visualization/
-│   ├── plotly_charts.py      # Data visualization components
-│   └── mermaid_diagrams.py   # Process diagram utilities
-├── tests/                    # Test files
-│   ├── test_database.py     # Database connection tests
-│   ├── test_llm.py          # LLM integration tests
-│   └── test_ui.py           # UI component tests
-├── .env                      # Environment variables (local)
-├── .env.example             # Environment variable template
-├── .gitignore              # Git ignore patterns
-├── pytest.ini             # Test configuration
-├── pyproject.toml          # Project metadata and tool configuration
-├── requirements.txt        # Dependencies
-└── README.md              # Setup and usage instructions
+│   └── my_ecommerce_db.duckdb # Generated database (10K orders)
+├── 40-llm/                    # LLM integration components
+│   ├── sql_agent.py          # LangChain SQL agent
+│   └── story_generator.py    # OpenAI story generation
+├── 50-visualization/          # Visualization components
+│   └── plotly_charts.py      # Interactive chart generation
+├── requirements.txt           # Python dependencies
+├── README.md                  # Project documentation
+├── test_application.py        # Application tests
+├── good-layout.png            # UI design reference
+└── venv/                     # Python virtual environment
+```
+
+### **📁 Recommended File Structure Improvements**
+
+```
+Data-Story-AI/
+├── app.py                     # Rename Welcome.py to app.py (clearer entry point)
+├── pages/
+│   ├── 01_Analysis.py         # Rename with numbers for better ordering
+│   └── 02_Data.py
+├── src/                       # Move core modules into src/
+│   ├── database/              # Rename 30-database -> src/database
+│   ├── llm/                   # Rename 40-llm -> src/llm
+│   └── visualization/         # Rename 50-visualization -> src/visualization
+├── config/                    # Rename 20-config -> config
+├── docs/                      # Rename 10-agent -> docs
+├── data/                      # New: For database files and datasets
+│   └── my_ecommerce_db.duckdb
+├── tests/                     # Proper testing structure
+├── .env.example              # Environment variable template
+└── .gitignore                # Updated to exclude .env files
 ```
 
 ### **1.2 Database Integration**
@@ -121,19 +141,22 @@ poly-base/
 - Add connection testing, validation, and health checks
 - Create data validation functions for quality assurance
 
-### **1.3 Basic Streamlit Interface**
+### **1.3 Single-Page Streamlit Interface**
 
-- Create two-tab layout: "Chat" and "View"
-- **Chat Tab:**
-  - Simple text input for questions with validation
-  - Static response: "Visit View tab for detailed analysis"
-  - Clean, minimal interface focused on question collection
+- Create single-page layout with clean sidebar navigation
+- **Main Interface:**
+  - Dropdown selection for pre-populated questions
+  - "Other" option for custom question input
+  - Immediate inline display of analysis results
+  - Clean, minimal interface focused on single-turn interactions
   - Input sanitization and basic validation
-- **View Tab:**
-  - Placeholder for rich content display
+- **Sidebar Navigation:**
+  - Clean navigation between Welcome, Analysis, and Data pages
+  - Minimal, professional styling
+- **Results Display:**
+  - Inline results display below question selection
   - Loading state indicators with progress tracking
   - Error boundary components for graceful failure handling
-- Implement tab state management and session persistence
 
 ### **1.4 LangChain SQL Agent Integration**
 
@@ -155,7 +178,9 @@ poly-base/
 
 ---
 
-## **Phase 2: Rich Content Generation**
+## **Phase 2: Rich Content Generation (Completed)**
+
+The rich content generation is implemented and working:
 
 ### **2.1 Story Generation Framework**
 
@@ -197,83 +222,23 @@ poly-base/
 
 ---
 
-## **Phase 3: Performance & Resilience**
+## **Current Implementation Status**
 
-### **3.1 Performance Optimization**
+### **✅ Completed Features**
+- Single-page interface with dropdown question selection
+- Pre-populated business questions for e-commerce analytics
+- Inline results display with visualizations
+- Database integration with 10,000 sample orders
+- Clean sidebar navigation between pages
+- LLM-powered SQL generation and story creation
+- Interactive Plotly charts and data tables
 
-- **Query Result Limits:** Cap at 10,000 rows maximum with configurable limits
-- **Timeout Management:** 30-second query timeout with graceful handling
-- **Caching Strategy:**
-  - Use `@st.cache_data` for SQL query results (5-10 minute TTL)
-  - Cache LLM responses by question hash with TTL management
-  - Implement cache invalidation strategies and cache warming
-  - Monitor cache hit rates and performance impact
-- **Memory Management:** Monitor DataFrame sizes before processing with limits
-- **Database Connection Pooling:** Efficient connection management
-- **Query Optimization:** Analyze and optimize slow queries
-
-### **3.2 Advanced Error Handling**
-
-- **Retry Mechanisms:** 2-3 retry attempts for failed SQL generation with backoff
-- **Query Validation:** Use sqlparse library for SQL syntax validation
-- **API Resilience:** Implement exponential backoff for rate limits
-- **Graceful Degradation:** Provide meaningful alternatives when systems fail
-- **Circuit Breaker Patterns:** Prevent cascade failures in external dependencies
-- **Health Checks:** Monitor system components and dependencies
-- **Error Analytics:** Track error patterns for system improvement
-
-### **3.3 User Experience Enhancements**
-
-- **Progressive Loading:** Multi-stage loading indicators with meaningful messages
-- **Input Validation:** Basic question format checking and sanitization
-- **Response Debouncing:** Wait 500ms after user input before processing
-- **Operation Cancellation:** Allow users to stop long-running operations
-- **Session Management:** Maintain user context and preferences
-- **Accessibility:** Ensure WCAG compliance for UI components
-- **Mobile Responsiveness:** Optimize for mobile and tablet interfaces
-
----
-
-## **Phase 4: Production Readiness**
-
-### **4.1 Question Complexity Management**
-
-- Implement question complexity scoring algorithm
-- Provide user guidance for effective queries with examples
-- Create question templates and examples for different use cases
-- Add suggestion system for overly complex requests
-- Implement query decomposition for complex multi-part questions
-- Create query history and favorites functionality
-
-### **4.2 Comprehensive Testing**
-
-#### **Testing Implementation Details**
-
-- **Unit Tests:** pytest for database connections, query validation, data processing
-- **Integration Tests:** LangChain agent behavior, OpenAI API integration, end-to-end workflows
-- **End-to-End Tests:** Streamlit UI automation using selenium or playwright
-- **Performance Tests:** Query response times, memory usage profiling, load testing
-- **Error Scenario Tests:** Invalid SQL, API failures, timeout handling, edge cases
-- **Security Tests:** Input validation, injection attacks, authentication bypass
-- **Accessibility Tests:** Screen reader compatibility, keyboard navigation
-- **Cross-browser Tests:** Chrome, Firefox, Safari compatibility
-
-#### **Test Coverage Requirements**
-
-- Minimum 80% code coverage for critical components
-- 100% coverage for database operations and security functions
-- Performance benchmarks for all major user flows
-- Automated regression testing for each deployment
-
-### **4.3 Documentation & Deployment**
-
-- Complete setup instructions with troubleshooting guide
-- Usage guidelines and best practices with examples
-- API documentation for all components
-- Deployment documentation for Streamlit Cloud and other platforms
-- Security configuration guide
-- Performance tuning recommendations
-- Backup and disaster recovery procedures
+### **📋 Remaining Improvements**
+- UI refinements to match target design (dropdown styling, layout optimization)
+- Enhanced error handling and user feedback
+- Performance optimization for larger datasets
+- Additional pre-populated questions for different business scenarios
+- Query result caching for improved response times
 
 ---
 
@@ -312,10 +277,11 @@ poly-base/
 
 ### **Architecture Decisions**
 
-- **Single-Turn Conversations:** Simplifies state management and reduces complexity for MVP
-- **Separation of Concerns:** Clear distinction between quick chat interface and rich analysis view
-- **Complete View Redraw:** Eliminates caching complexity and ensures fresh insights for each question
-- **Modular Design:** Separate components for easy testing and maintenance
+- **Single-Page Interface:** Streamlined user experience with dropdown question selection and inline results
+- **Multi-Page Streamlit App:** Clean navigation between Welcome, Analysis, and Data overview pages
+- **Modular Component Design:** Separate modules for database, LLM, and visualization logic
+- **Single-Turn Interactions:** Focus on immediate question-answer workflow without complex state management
+- **Inline Results Display:** Complete analysis results shown immediately below question selection
 
 ### **LLM Integration Approach**
 

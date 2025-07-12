@@ -12,10 +12,11 @@ from pathlib import Path
 import traceback
 import time
 
-# Add module paths
-sys.path.append(str(Path(__file__).parent / "30-database"))
-sys.path.append(str(Path(__file__).parent / "40-llm"))
-sys.path.append(str(Path(__file__).parent / "50-visualization"))
+# Add module paths - navigate to parent directory first
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root / "30-database"))
+sys.path.append(str(project_root / "40-llm"))
+sys.path.append(str(project_root / "50-visualization"))
 
 def test_database_components():
     """Test database connection and schema components."""

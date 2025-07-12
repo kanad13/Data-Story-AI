@@ -600,6 +600,3 @@ env.config
 docu_venv
 docu_env .nosync
 datum/think/070-ml/700-tools/340-generic_ai_tools/300-langchain/110-rag_without_history/nke-10k-2023.pdf
-test_input_files
-*.duckdb
-synthetic_ecommerce_sales_data.csv
